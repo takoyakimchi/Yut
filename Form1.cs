@@ -5,7 +5,6 @@ using System.Windows.Forms;
 using System.Text;
 using System.Net;
 using System.Collections.Generic;
-using System.Collections;
 
 namespace Yutnori
 {
@@ -156,20 +155,63 @@ namespace Yutnori
             }
             else if (new_phase == PHASE.END_GAME)
             {
+                if(is_server)
+                {
+                    switch(player_count)
+                    {
+                        case 1:
+                            pb_human1.Image = img_pHuman.Images[0];
+                            break;
+                        case 2:
+                            pb_human1.Image = img_pHuman.Images[0];
+                            pb_human2.Image = img_pHuman.Images[0];
+                            break;
+                        case 3:
+                            pb_human1.Image = img_pHuman.Images[0];
+                            pb_human2.Image = img_pHuman.Images[0];
+                            pb_human3.Image = img_pHuman.Images[0];
+                            break;
+                        case 4:
+                            pb_human1.Image = img_pHuman.Images[0];
+                            pb_human2.Image = img_pHuman.Images[0];
+                            pb_human3.Image = img_pHuman.Images[0];
+                            pb_human4.Image = img_pHuman.Images[0];
+                            break;
+                    }
+                }
+                else
+                {
+                    switch(current_player_num)
+                    {
+                        case 1:
+                            pb_human1.Image = img_pHuman.Images[0];
+                            break;
+                        case 2:
+                            pb_human1.Image = img_pHuman.Images[0];
+                            pb_human2.Image = img_pHuman.Images[0];
+                            break;
+                        case 3:
+                            pb_human1.Image = img_pHuman.Images[0];
+                            pb_human2.Image = img_pHuman.Images[0];
+                            pb_human3.Image = img_pHuman.Images[0];
+                            break;
+                        case 4:
+                            pb_human1.Image = img_pHuman.Images[0];
+                            pb_human2.Image = img_pHuman.Images[0];
+                            pb_human3.Image = img_pHuman.Images[0];
+                            pb_human4.Image = img_pHuman.Images[0];
+                            break;
+                    }
+                }
+
+                ready_count = 0;
+                is_ready = false;
+
                 pnl_login.Visible = false;
                 txt_send.Enabled = true;
                 btn_send.Enabled = true;
                 btn_ready.Enabled = true;
                 btn_Roll.Enabled = false;
-
-                pb_human1.Image = img_pHuman.Images[0];
-                pb_human2.Image = img_pHuman.Images[0];
-                pb_human3.Image = img_pHuman.Images[0];
-                pb_human4.Image = img_pHuman.Images[0];
-
-                ready_count = 0;
-                is_ready = false;
-
                 Update(); //컨트롤의 변경사항을 즉시 반영
             }
             phase = new_phase;
@@ -884,16 +926,20 @@ namespace Yutnori
 
                 // (8) 게임이 끝난 경우
                 case "end_game": {
-                    changePhase(PHASE.END_GAME);
-                    string win_player = tokens[1].Trim('\0');
-                    string data = "system_msg" + '\x01' + win_player;
+                        string win_player = tokens[1].Trim('\0');
 
-                    if (is_server) {
-                        byte[] buffer = Encoding.UTF8.GetBytes(data);
-                        send_buffer_to_all_clients(buffer);
+                        string msg = "<System> " + win_player.ToString() + "이 승리했습니다!";
+                        string data = "system_msg" + '\x01' + msg;
+                        AppendText(rtb_chat, msg);
+                        changePhase(PHASE.END_GAME);
+
+                        if (is_server)
+                        {
+                            byte[] buffer = Encoding.UTF8.GetBytes(data);
+                            send_buffer_to_all_clients(buffer);
+                        }
+                        break;
                     }
-                    break;
-                }
             }
 
             // 데이터를 받은 후엔 다시 버퍼를 비워주고
@@ -911,6 +957,7 @@ namespace Yutnori
                 (is_server && (ready_count <= 1 || ready_count < player_count)) ||
                 (!is_server && ready_count < current_player_num))
             {
+                MessageBox.Show("not yet");
                 return;
             }
 
@@ -961,7 +1008,6 @@ namespace Yutnori
             markers[14] = new Marker(4, 3, pbMarker4p_3);
             markers[15] = new Marker(4, 4, pbMarker4p_4);
         }
-
 
         // 반복문 돌려서 화면을 다 업데이트 하는 부분
         private void UpdateAll()
@@ -1023,7 +1069,7 @@ namespace Yutnori
                 }
             }
         }
-        
+
         // 말의 이미지 초기화하는 함수
         private void initializeMarkers()
         {
@@ -1167,19 +1213,26 @@ namespace Yutnori
                         if (is_server) {
                             byte[] buffer = Encoding.UTF8.GetBytes(data);
                             send_buffer_to_all_clients(buffer);
+
+                            string msg = "<System> " + my_player_num.ToString() + "이 승리했습니다!";
+                            AppendText(rtb_chat, msg);
+                            changePhase(PHASE.END_GAME);
                         }
                         else {
+                            
                             send_data_to_server(data);
                         }
                     }
 
                     // 이동을 완료했다. 혹시 yuts가 비어 있으면 턴을 다음으로 넘긴다.
-                    else if (yuts.Count == 0 && !isCatch) {
+                    else if (yuts.Count == 0 && !isCatch)
+                    {
                         nextTurn();
                     }
 
                     // 이동 완료 안함 (리스트에 윷이 남아 있거나 잡은 경우 한 번 더 던지도록.) - 수정(?)
-                    else if (isCatch) {
+                    else if(yuts.Count == 0 && isCatch)
+                    {
                         btn_Roll.Enabled = true;
                     }
                 }
@@ -1315,7 +1368,18 @@ namespace Yutnori
         private void btn_Roll_Click(object sender, EventArgs e)
         {
             Random rand = new Random();
+            //int number = rand.Next(1000);
             int number = rand.Next(0, 1000);
+
+            //테스트코드 - 도:130, 개:350, 걸:650, 윷:900, 모:950, 빽도:30, 빨빽:65, 두빽도:260
+            if (yuts.Count == 0) number = 950;
+            if (yuts.Count == 1) number = 950;
+            if (yuts.Count == 2) number = 950;
+            if (yuts.Count == 3) number = 950;
+
+            if (yuts.Count == 4) number = 950;
+            if (yuts.Count == 5) number = 950;
+            if (yuts.Count == 6) number = 350;
 
             // 도
             if (120 <= number && number < 250) // 도 1
@@ -1448,8 +1512,6 @@ namespace Yutnori
                     {
                         if ((markers[i].position != 0) && markers[i].position != 1000)
                             isPlaced = true;
-                        if (yuts.Count > 0)
-                            isPlaced = true;
                     }
                 }
 
@@ -1535,7 +1597,6 @@ namespace Yutnori
                     pb_yut3.Image = Properties.Resources.yut_back1;
                     pb_yut4.Image = Properties.Resources.yut_back2;
                 }
-
                 yuts.Add(Yut.DoubleBackDo);
             }
             else if (625 <= number && number < 875) // 걸 3
@@ -1637,7 +1698,7 @@ namespace Yutnori
                     ready_count--;
                 }
 
-                // 게임시작을 시도한다. (게임시작의 여부는 해당 함수내에서 판별)
+                //게임시작을 시도한다. (게임시작의 여부는 해당 함수내에서 판별)
                 GameStart();
             }
             else    // 클라이언트가 준비 버튼을 눌렀을 때
